@@ -43,37 +43,39 @@ def render_skewt(sounding: dict, indices: dict) -> str:
     # Parcel path
     skew.plot(p, prof, "k--", linewidth=1.5, label="Parcel")
 
-    # Wind barbs — independent axes with matching log-P scale
+    # Axis limits (set before barbs so they can match)
+    skew.ax.set_ylim(1050, 200)
+    skew.ax.set_xlim(-40, 50)
+
+    # Wind barbs — one per major pressure level, interpolated from sounding data
+    barb_levels = np.array([1000, 900, 800, 700, 600, 500, 400, 300, 200], dtype=float)
+    p_mag = p.magnitude
+    bu = np.interp(barb_levels, p_mag[::-1], np.array([x.magnitude for x in u])[::-1])
+    bv = np.interp(barb_levels, p_mag[::-1], np.array([x.magnitude for x in v])[::-1])
+
+    # Separate non-skewed axis for wind barbs
     pos = skew.ax.get_position()
-    ax_barbs = fig.add_axes([pos.x1 + 0.02, pos.y0, 0.08, pos.height])
+    ax_barbs = fig.add_axes([pos.x1, pos.y0, 0.08, pos.height])
     ax_barbs.set_yscale("log")
-    ax_barbs.set_ylim(skew.ax.get_ylim())  # match skew-T exactly
+    ax_barbs.set_ylim(1050, 200)
     ax_barbs.yaxis.set_visible(False)
     ax_barbs.xaxis.set_visible(False)
-    ax_barbs.set_xlim(-1.5, 1.5)
+    ax_barbs.set_xlim(0, 1)
     ax_barbs.patch.set_visible(False)
     for spine in ax_barbs.spines.values():
         spine.set_visible(False)
 
-    # Thin barbs using even spacing in log-pressure space
-    p_mag = np.array([x.magnitude for x in p])
-    # Only include levels within the plot range
-    mask = (p_mag >= 200) & (p_mag <= 1050)
-    valid_idx = np.where(mask)[0]
-    
-    log_p = np.log(p_mag)
-    barb_idx = [valid_idx[0]]
-    for i in valid_idx[1:]:
-        if abs(log_p[i] - log_p[barb_idx[-1]]) >= 0.065:
-            barb_idx.append(i)
+    # Offset x per barb so the visual center stays aligned.
+    # pivot="tip" anchors the tip at (x, y). The staff extends in the
+    # wind-from direction, so positive u pushes the staff LEFT, negative
+    # u pushes it RIGHT. Shift x to compensate.
+    wind_angle = np.arctan2(-bu, -bv)  # direction wind comes FROM
+    x_offset = -np.sin(wind_angle) * 0.18  # staff extends this way; counter it
+    bx = 0.5 + x_offset
 
-    bp = p_mag[barb_idx]
-    bu = np.array([u[i].magnitude for i in barb_idx])
-    bv = np.array([v[i].magnitude for i in barb_idx])
     ax_barbs.barbs(
-        np.zeros_like(bp), bp, bu, bv,
-        length=6, clip_on=True, pivot="tip",
-        linewidth=0.8,
+        bx, barb_levels, bu, bv,
+        length=6, clip_on=False, linewidth=0.8,
     )
 
     # CAPE / CIN shading
@@ -91,17 +93,13 @@ def render_skewt(sounding: dict, indices: dict) -> str:
     skew.plot_moist_adiabats(linewidth=0.5, alpha=0.4)
     skew.plot_mixing_lines(linewidth=0.5, alpha=0.4)
 
-    # Axis limits
-    skew.ax.set_ylim(1050, 200)
-    skew.ax.set_xlim(-40, 50)
-
     # Title
     title = (
         f"Skew-T Log-P — {sounding['model']} "
-        f"({sounding['latitude']:.2f}, {sounding['longitude']:.2f})\n"
+        f"({sounding['latitude']:.2f}, {sounding['longitude']:.2f}) — "
         f"Valid: {sounding['valid_time']} UTC"
     )
-    plt.title(title, fontsize=13, fontweight="bold", loc="left")
+    skew.ax.set_title(title, fontsize=13, fontweight="bold", loc="left")
 
     # Indices text box
     from skewt_mcp.indices import format_indices_text
