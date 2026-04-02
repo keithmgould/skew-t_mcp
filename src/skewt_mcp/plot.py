@@ -43,8 +43,8 @@ def render_skewt(sounding: dict, indices: dict) -> str:
     # Parcel path
     skew.plot(p, prof, "k--", linewidth=1.5, label="Parcel")
 
-    # Wind barbs — pinned to a fixed column on the right side of the diagram
-    skew.plot_barbs(p, u, v, xloc=0.95)
+    # Wind barbs — fixed column just outside the right edge of the plot
+    skew.plot_barbs(p, u, v, xloc=1.05, length=6)
 
     # CAPE / CIN shading
     try:
