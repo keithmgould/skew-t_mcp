@@ -55,14 +55,16 @@ async def fetch_sounding(
     pressure_vars = _build_pressure_vars(PRESSURE_LEVELS)
 
     # Choose API endpoint based on model
-    # Open-Meteo's default forecast endpoint uses the best available model blend
-    # which includes HRRR for CONUS. GFS can be explicitly requested.
-    if model == "gfs":
-        endpoint = f"{OPEN_METEO_BASE}/gfs"
-        model_params = {}
-    else:
-        endpoint = f"{OPEN_METEO_BASE}/forecast"
-        model_params = {}
+    # - "hrrr" (default): Open-Meteo's best-available blend (includes HRRR for CONUS)
+    # - "gfs": GFS global model
+    # - "ecmwf": ECMWF IFS global model
+    MODEL_ENDPOINTS = {
+        "hrrr": f"{OPEN_METEO_BASE}/forecast",
+        "gfs": f"{OPEN_METEO_BASE}/gfs",
+        "ecmwf": f"{OPEN_METEO_BASE}/ecmwf",
+    }
+    endpoint = MODEL_ENDPOINTS.get(model, MODEL_ENDPOINTS["hrrr"])
+    model_params = {}
 
     params = {
         "latitude": latitude,

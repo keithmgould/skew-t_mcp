@@ -46,8 +46,8 @@ async def list_tools() -> list[Tool]:
                     },
                     "model": {
                         "type": "string",
-                        "description": "Weather model: 'hrrr' or 'gfs'. Defaults to 'hrrr'.",
-                        "enum": ["hrrr", "gfs"],
+                        "description": "Weather model. 'hrrr' (default, best for CONUS/US), 'gfs' (global), or 'ecmwf' (global, European model).",
+                        "enum": ["hrrr", "gfs", "ecmwf"],
                     },
                 },
                 "required": ["latitude", "longitude"],
@@ -80,8 +80,8 @@ async def list_tools() -> list[Tool]:
                     },
                     "model": {
                         "type": "string",
-                        "description": "Weather model: 'hrrr' or 'gfs'. Defaults to 'hrrr'.",
-                        "enum": ["hrrr", "gfs"],
+                        "description": "Weather model. 'hrrr' (default, best for CONUS/US), 'gfs' (global), or 'ecmwf' (global, European model).",
+                        "enum": ["hrrr", "gfs", "ecmwf"],
                     },
                 },
                 "required": ["latitude", "longitude"],
