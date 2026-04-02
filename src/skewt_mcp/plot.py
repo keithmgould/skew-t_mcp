@@ -43,8 +43,38 @@ def render_skewt(sounding: dict, indices: dict) -> str:
     # Parcel path
     skew.plot(p, prof, "k--", linewidth=1.5, label="Parcel")
 
-    # Wind barbs — fixed column just outside the right edge of the plot
-    skew.plot_barbs(p, u, v, xloc=1.05, length=6)
+    # Wind barbs — independent axes with matching log-P scale
+    pos = skew.ax.get_position()
+    ax_barbs = fig.add_axes([pos.x1 + 0.02, pos.y0, 0.08, pos.height])
+    ax_barbs.set_yscale("log")
+    ax_barbs.set_ylim(skew.ax.get_ylim())  # match skew-T exactly
+    ax_barbs.yaxis.set_visible(False)
+    ax_barbs.xaxis.set_visible(False)
+    ax_barbs.set_xlim(-1.5, 1.5)
+    ax_barbs.patch.set_visible(False)
+    for spine in ax_barbs.spines.values():
+        spine.set_visible(False)
+
+    # Thin barbs using even spacing in log-pressure space
+    p_mag = np.array([x.magnitude for x in p])
+    # Only include levels within the plot range
+    mask = (p_mag >= 200) & (p_mag <= 1050)
+    valid_idx = np.where(mask)[0]
+    
+    log_p = np.log(p_mag)
+    barb_idx = [valid_idx[0]]
+    for i in valid_idx[1:]:
+        if abs(log_p[i] - log_p[barb_idx[-1]]) >= 0.065:
+            barb_idx.append(i)
+
+    bp = p_mag[barb_idx]
+    bu = np.array([u[i].magnitude for i in barb_idx])
+    bv = np.array([v[i].magnitude for i in barb_idx])
+    ax_barbs.barbs(
+        np.zeros_like(bp), bp, bu, bv,
+        length=6, clip_on=True, pivot="tip",
+        linewidth=0.8,
+    )
 
     # CAPE / CIN shading
     try:
@@ -85,8 +115,7 @@ def render_skewt(sounding: dict, indices: dict) -> str:
         bbox=dict(boxstyle="round,pad=0.4", facecolor="white", alpha=0.85, edgecolor="gray"),
     )
 
-    plt.legend(loc="upper left", fontsize=9)
-    plt.tight_layout()
+    skew.ax.legend(loc="upper left", fontsize=9)
 
     # Encode to base64 PNG
     buf = io.BytesIO()
