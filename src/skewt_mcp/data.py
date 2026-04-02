@@ -21,8 +21,8 @@ def _build_pressure_vars(levels: list[int]) -> list[str]:
         variables.extend([
             f"temperature_{level}hPa",
             f"relative_humidity_{level}hPa",
-            f"windspeed_{level}hPa",
-            f"winddirection_{level}hPa",
+            f"wind_speed_{level}hPa",
+            f"wind_direction_{level}hPa",
         ])
     return variables
 
@@ -55,12 +55,14 @@ async def fetch_sounding(
     pressure_vars = _build_pressure_vars(PRESSURE_LEVELS)
 
     # Choose API endpoint based on model
-    if model == "hrrr":
-        endpoint = f"{OPEN_METEO_BASE}/forecast"
-        model_params = {"models": "hrrr_conus"}
+    # Open-Meteo's default forecast endpoint uses the best available model blend
+    # which includes HRRR for CONUS. GFS can be explicitly requested.
+    if model == "gfs":
+        endpoint = f"{OPEN_METEO_BASE}/gfs"
+        model_params = {}
     else:
         endpoint = f"{OPEN_METEO_BASE}/forecast"
-        model_params = {"models": "gfs_seamless"}
+        model_params = {}
 
     params = {
         "latitude": latitude,
@@ -68,8 +70,8 @@ async def fetch_sounding(
         "hourly": ",".join(pressure_vars + [
             "temperature_2m",
             "relative_humidity_2m",
-            "windspeed_10m",
-            "winddirection_10m",
+            "wind_speed_10m",
+            "wind_direction_10m",
             "surface_pressure",
         ]),
         "start_date": date,
@@ -105,8 +107,8 @@ async def fetch_sounding(
     for level in PRESSURE_LEVELS:
         t = hourly.get(f"temperature_{level}hPa")
         rh = hourly.get(f"relative_humidity_{level}hPa")
-        ws = hourly.get(f"windspeed_{level}hPa")
-        wd = hourly.get(f"winddirection_{level}hPa")
+        ws = hourly.get(f"wind_speed_{level}hPa")
+        wd = hourly.get(f"wind_direction_{level}hPa")
 
         if t is None or rh is None:
             continue
