@@ -135,17 +135,40 @@ async def fetch_sounding(
 
     # Surface data
     sfc_pressure = hourly.get("surface_pressure", [1013.25])[target_idx] or 1013.25
+    sfc_t = hourly.get("temperature_2m", [None])[target_idx]
+    sfc_rh = hourly.get("relative_humidity_2m", [None])[target_idx]
+    sfc_ws = hourly.get("wind_speed_10m", [0])[target_idx] or 0
+    sfc_wd = hourly.get("wind_direction_10m", [0])[target_idx] or 0
+
+    # Filter out below-ground pressure levels
+    valid_pressures_arr = np.array(valid_pressures, dtype=float)
+    above_ground = valid_pressures_arr <= sfc_pressure
+    valid_pressures_arr = valid_pressures_arr[above_ground]
+    temperatures = np.array(temperatures, dtype=float)[above_ground]
+    dewpoints = np.array(dewpoints, dtype=float)[above_ground]
+    wind_speeds = np.array(wind_speeds, dtype=float)[above_ground]
+    wind_directions = np.array(wind_directions, dtype=float)[above_ground]
+
+    # Insert actual surface observation as lowest level
+    if sfc_t is not None and sfc_rh is not None:
+        sfc_td = _dewpoint_from_rh(sfc_t, sfc_rh)
+        valid_pressures_arr = np.insert(valid_pressures_arr, 0, sfc_pressure)
+        temperatures = np.insert(temperatures, 0, sfc_t)
+        dewpoints = np.insert(dewpoints, 0, sfc_td)
+        wind_speeds = np.insert(wind_speeds, 0, sfc_ws * 0.539957)
+        wind_directions = np.insert(wind_directions, 0, sfc_wd)
 
     return {
-        "pressure": np.array(valid_pressures, dtype=float),
-        "temperature": np.array(temperatures, dtype=float),
-        "dewpoint": np.array(dewpoints, dtype=float),
-        "wind_speed": np.array(wind_speeds, dtype=float),
-        "wind_direction": np.array(wind_directions, dtype=float),
+        "pressure": valid_pressures_arr,
+        "temperature": temperatures,
+        "dewpoint": dewpoints,
+        "wind_speed": wind_speeds,
+        "wind_direction": wind_directions,
         "valid_time": valid_time,
         "model": model.upper(),
         "latitude": data.get("latitude", latitude),
         "longitude": data.get("longitude", longitude),
+        "elevation": data.get("elevation", None),
         "surface_pressure": sfc_pressure,
     }
 

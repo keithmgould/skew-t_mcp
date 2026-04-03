@@ -46,6 +46,8 @@ def compute_indices(sounding: dict) -> dict:
     try:
         lfc_p, lfc_t = mpcalc.lfc(p, T, Td)
         lfc_p_val = lfc_p.magnitude
+        if np.isnan(lfc_p_val):
+            lfc_p_val = None
     except Exception:
         lfc_p_val = None
 
@@ -53,6 +55,8 @@ def compute_indices(sounding: dict) -> dict:
     try:
         el_p, el_t = mpcalc.el(p, T, Td)
         el_p_val = el_p.magnitude
+        if np.isnan(el_p_val):
+            el_p_val = None
     except Exception:
         el_p_val = None
 
