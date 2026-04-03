@@ -4,7 +4,7 @@ An MCP (Model Context Protocol) server that generates **Skew-T Log-P diagrams** 
 
 No API key needed — uses free [Open-Meteo](https://open-meteo.com/) data (which blends HRRR, GFS, and other models).
 
-![Example Skew-T output](example-output.png?v=2)
+![Example Skew-T output](https://raw.githubusercontent.com/keithmgould/skew-t_mcp/e2b2e45/example-output.png)
 
 ## What You Can Ask Your AI
 
